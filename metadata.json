@@ -1,0 +1,5 @@
+{
+  "name": "Anymovie - Premium Movie Experience",
+  "description": "A next-generation streaming platform featuring the latest premieres and an AI-powered movie companion. Built with React, Tailwind, and Gemini.",
+  "requestFramePermissions": []
+}
