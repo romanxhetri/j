@@ -11,11 +11,11 @@ const App: React.FC = () => {
   const [viewState, setViewState] = useState<ViewState>(ViewState.HOME);
   const [currentMovie, setCurrentMovie] = useState(FEATURED_MOVIE);
   
-  // State to manage user-uploaded movies from Database
+  // State to manage user-uploaded movies from Database or Local Storage
   const [customMovies, setCustomMovies] = useState<Movie[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
-  // Load movies from Database (Netlify Function)
+  // Load movies from Database (Netlify Function) with Local Storage Fallback
   useEffect(() => {
     const fetchMovies = async () => {
       try {
@@ -24,10 +24,18 @@ const App: React.FC = () => {
           const data = await response.json();
           setCustomMovies(data);
         } else {
-          console.error("Failed to fetch movies");
+          throw new Error("Backend not available");
         }
       } catch (error) {
-        console.error("Error connecting to backend:", error);
+        console.log("Backend unavailable, falling back to Local Storage");
+        const localData = localStorage.getItem('anymovie_uploads');
+        if (localData) {
+          try {
+            setCustomMovies(JSON.parse(localData));
+          } catch (e) {
+            console.error("Error parsing local storage", e);
+          }
+        }
       }
     };
 
@@ -63,8 +71,12 @@ const App: React.FC = () => {
   };
 
   const handleUploadMovie = async (movieData: Omit<Movie, 'id'>) => {
+    // Create a temporary ID for immediate display/local storage
+    const tempId = Date.now();
+    const newMovieForLocal = { ...movieData, id: tempId, genre: [movieData.genre[0]] };
+
     try {
-      // Send data to Netlify Function
+      // Try to save to Database
       const response = await fetch('/.netlify/functions/movies', {
         method: 'POST',
         headers: {
@@ -78,15 +90,21 @@ const App: React.FC = () => {
 
       if (response.ok) {
         const savedMovie = await response.json();
-        // Update local state immediately so user sees it without refresh
         setCustomMovies(prev => [savedMovie, ...prev]);
         setIsUploadModalOpen(false);
       } else {
-        alert("Failed to save movie to database.");
+        throw new Error("Backend save failed");
       }
     } catch (error) {
-      console.error("Upload error:", error);
-      alert("Error uploading movie.");
+      console.warn("Backend failed, saving to Local Storage instead.");
+      
+      // Fallback: Save to Local Storage
+      const currentLocalMovies = JSON.parse(localStorage.getItem('anymovie_uploads') || '[]');
+      const updatedLocalMovies = [newMovieForLocal, ...currentLocalMovies];
+      localStorage.setItem('anymovie_uploads', JSON.stringify(updatedLocalMovies));
+      
+      setCustomMovies(prev => [newMovieForLocal as Movie, ...prev]);
+      setIsUploadModalOpen(false);
     }
   };
 

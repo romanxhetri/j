@@ -1,10 +1,13 @@
 import { Client } from 'pg';
 
+// User provided Neon Database URL
+const DATABASE_URL = "postgresql://neondb_owner:npg_Wwnx6o2QXMfK@ep-super-meadow-ae312qd5-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require";
+
 export default async (req: Request) => {
   // 1. Connect to the database
   const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }, // Required for Neon
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false }, // Required for Neon connection stability
   });
 
   try {
@@ -68,7 +71,12 @@ export default async (req: Request) => {
 
   } catch (error) {
     console.error('Database Error:', error);
-    await client.end();
-    return new Response(JSON.stringify({ error: "Database operation failed" }), { status: 500 });
+    // Ensure client is closed on error
+    try { await client.end(); } catch (e) {} 
+    
+    return new Response(JSON.stringify({ error: "Database operation failed: " + String(error) }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 };
