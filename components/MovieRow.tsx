@@ -62,8 +62,13 @@ const MovieRow: React.FC<MovieRowProps> = ({ title, movies, onMovieClick }) => {
                  </div>
                  <h3 className="text-white font-bold text-sm md:text-base leading-tight">{movie.title}</h3>
                  <p className="text-gray-400 text-xs mt-1">
-                   {movie.genre && movie.genre.length > 0 ? movie.genre[0] : 'Unknown'}
+                   {movie.genre?.[0] || 'Unknown'}
                  </p>
+                 {movie.description && (
+                   <p className="text-gray-300 text-[10px] line-clamp-2 mt-2 hidden md:block opacity-80">
+                     {movie.description}
+                   </p>
+                 )}
               </div>
             </div>
           ))}

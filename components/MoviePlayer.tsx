@@ -28,7 +28,7 @@ const MoviePlayer: React.FC<MoviePlayerProps> = ({ embedUrl, title, onBack }) =>
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-bold text-white tracking-wide drop-shadow-md hidden sm:block truncate max-w-md">{title}</h1>
+          <h1 className="text-xl font-bold text-white tracking-wide drop-shadow-md hidden md:block truncate max-w-md">{title}</h1>
         </div>
         
         <div className="flex items-center gap-3 pointer-events-auto">
@@ -44,9 +44,9 @@ const MoviePlayer: React.FC<MoviePlayerProps> = ({ embedUrl, title, onBack }) =>
             href={embedUrl} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-800/80 hover:bg-zinc-700 text-white text-sm rounded-full backdrop-blur-md border border-white/10 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800/80 hover:bg-zinc-700 text-white text-xs sm:text-sm rounded-full backdrop-blur-md border border-white/10 transition"
           >
-            <span className="hidden sm:inline">Open in new tab</span>
+            <span>If video doesn't play click here</span>
             <ExternalLink className="w-4 h-4" />
           </a>
         </div>
