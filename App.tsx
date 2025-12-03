@@ -3,7 +3,6 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import MovieRow from './components/MovieRow';
 import MoviePlayer from './components/MoviePlayer';
-import ChatAssistant from './components/ChatAssistant';
 import UploadModal from './components/UploadModal';
 import { FEATURED_MOVIE, POPULAR_MOVIES } from './constants';
 import { ViewState, Movie } from './types';
@@ -135,8 +134,6 @@ const App: React.FC = () => {
               <p>© 2024 Anymovie Inc.</p>
             </footer>
           </main>
-
-          <ChatAssistant />
           
           <UploadModal 
             isOpen={isUploadModalOpen} 
