@@ -3,7 +3,7 @@ import { Client } from 'pg';
 // User provided Neon Database URL
 const DATABASE_URL = "postgresql://neondb_owner:npg_Wwnx6o2QXMfK@ep-super-meadow-ae312qd5-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require";
 
-export default async (req: Request) => {
+export const handler = async (event: any, context: any) => {
   // 1. Connect to the database
   const client = new Client({
     connectionString: DATABASE_URL,
@@ -14,8 +14,8 @@ export default async (req: Request) => {
     await client.connect();
 
     // 2. Handle POST request (Add Movie)
-    if (req.method === 'POST') {
-      const body = await req.json();
+    if (event.httpMethod === 'POST') {
+      const body = JSON.parse(event.body || '{}');
       const { title, description, image, embedUrl, genre, year, rating, duration } = body;
 
       const query = `
@@ -31,21 +31,25 @@ export default async (req: Request) => {
       
       // Map back to frontend structure
       const row = result.rows[0];
-      return new Response(JSON.stringify({
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        image: row.image,
-        embedUrl: row.embed_url,
-        genre: [row.genre],
-        year: row.year,
-        rating: row.rating,
-        duration: row.duration
-      }), { headers: { 'Content-Type': 'application/json' } });
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          image: row.image,
+          embedUrl: row.embed_url,
+          genre: [row.genre],
+          year: row.year,
+          rating: row.rating,
+          duration: row.duration
+        })
+      };
     }
 
     // 3. Handle GET request (Fetch Movies)
-    if (req.method === 'GET') {
+    if (event.httpMethod === 'GET') {
       const result = await client.query('SELECT * FROM movies ORDER BY id DESC');
       await client.end();
 
@@ -61,22 +65,25 @@ export default async (req: Request) => {
         duration: row.duration
       }));
 
-      return new Response(JSON.stringify(movies), { 
-        headers: { 'Content-Type': 'application/json' } 
-      });
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(movies)
+      };
     }
 
     await client.end();
-    return new Response("Method not allowed", { status: 405 });
+    return { statusCode: 405, body: "Method not allowed" };
 
   } catch (error) {
     console.error('Database Error:', error);
     // Ensure client is closed on error
     try { await client.end(); } catch (e) {} 
     
-    return new Response(JSON.stringify({ error: "Database operation failed: " + String(error) }), { 
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: "Database operation failed: " + String(error) })
+    };
   }
 };
