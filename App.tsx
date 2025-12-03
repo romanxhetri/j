@@ -7,30 +7,34 @@ import UploadModal from './components/UploadModal';
 import { FEATURED_MOVIE, POPULAR_MOVIES } from './constants';
 import { ViewState, Movie } from './types';
 
-const STORAGE_KEY = 'anymovie_custom_movies';
-
 const App: React.FC = () => {
   const [viewState, setViewState] = useState<ViewState>(ViewState.HOME);
   const [currentMovie, setCurrentMovie] = useState(FEATURED_MOVIE);
   
-  // State to manage user-uploaded movies separately
+  // State to manage user-uploaded movies from Database
   const [customMovies, setCustomMovies] = useState<Movie[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
-  // Load movies from local storage on mount
+  // Load movies from Database (Netlify Function)
   useEffect(() => {
-    const savedMovies = localStorage.getItem(STORAGE_KEY);
-    if (savedMovies) {
+    const fetchMovies = async () => {
       try {
-        setCustomMovies(JSON.parse(savedMovies));
-      } catch (e) {
-        console.error("Failed to parse saved movies:", e);
+        const response = await fetch('/.netlify/functions/movies');
+        if (response.ok) {
+          const data = await response.json();
+          setCustomMovies(data);
+        } else {
+          console.error("Failed to fetch movies");
+        }
+      } catch (error) {
+        console.error("Error connecting to backend:", error);
       }
-    }
+    };
+
+    fetchMovies();
   }, []);
 
   // Combine custom movies with default popular movies
-  // Custom movies appear first
   const allMovies = [...customMovies, ...POPULAR_MOVIES];
 
   // When "Watch Now" is clicked on Hero
@@ -46,7 +50,6 @@ const App: React.FC = () => {
         setCurrentMovie(movie);
         setViewState(ViewState.WATCH);
     } else {
-        // Fallback for demo content without links
         console.log("No embed link for this movie");
     }
   };
@@ -59,20 +62,32 @@ const App: React.FC = () => {
     setIsUploadModalOpen(true);
   };
 
-  const handleUploadMovie = (movieData: Omit<Movie, 'id'>) => {
-    const newMovie: Movie = {
-      ...movieData,
-      id: Date.now(), // Generate a unique ID based on timestamp
-    };
-    
-    // Update state
-    const updatedCustomMovies = [newMovie, ...customMovies];
-    setCustomMovies(updatedCustomMovies);
-    
-    // Save to Local Storage for persistence
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCustomMovies));
-    
-    setIsUploadModalOpen(false);
+  const handleUploadMovie = async (movieData: Omit<Movie, 'id'>) => {
+    try {
+      // Send data to Netlify Function
+      const response = await fetch('/.netlify/functions/movies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...movieData,
+          genre: movieData.genre[0] // Simplify array to string for DB
+        }),
+      });
+
+      if (response.ok) {
+        const savedMovie = await response.json();
+        // Update local state immediately so user sees it without refresh
+        setCustomMovies(prev => [savedMovie, ...prev]);
+        setIsUploadModalOpen(false);
+      } else {
+        alert("Failed to save movie to database.");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Error uploading movie.");
+    }
   };
 
   return (
