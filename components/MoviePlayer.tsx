@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, ExternalLink, RefreshCw } from 'lucide-react';
 
 interface MoviePlayerProps {
   embedUrl: string;
@@ -8,6 +8,14 @@ interface MoviePlayerProps {
 }
 
 const MoviePlayer: React.FC<MoviePlayerProps> = ({ embedUrl, title, onBack }) => {
+  const [key, setKey] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleReload = () => {
+    setIsLoading(true);
+    setKey(prev => prev + 1);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black flex flex-col group">
       {/* Player Header - Visible on screen hover */}
@@ -16,33 +24,51 @@ const MoviePlayer: React.FC<MoviePlayerProps> = ({ embedUrl, title, onBack }) =>
           <button 
             onClick={onBack}
             className="p-2 rounded-full bg-white/10 hover:bg-red-600 backdrop-blur-md text-white transition"
+            title="Go Back"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-bold text-white tracking-wide drop-shadow-md hidden sm:block">{title}</h1>
+          <h1 className="text-xl font-bold text-white tracking-wide drop-shadow-md hidden sm:block truncate max-w-md">{title}</h1>
         </div>
         
-        {/* Fallback button in header if iframe fails */}
-        <a 
-          href={embedUrl} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-zinc-800/80 hover:bg-zinc-700 text-white text-sm rounded-full backdrop-blur-md border border-white/10 transition"
-        >
-          <span>If video fails, click here</span>
-          <ExternalLink className="w-4 h-4" />
-        </a>
+        <div className="flex items-center gap-3 pointer-events-auto">
+           <button 
+            onClick={handleReload}
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white transition"
+            title="Reload Video"
+          >
+            <RefreshCw className="w-5 h-5" />
+          </button>
+          
+          <a 
+            href={embedUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-800/80 hover:bg-zinc-700 text-white text-sm rounded-full backdrop-blur-md border border-white/10 transition"
+          >
+            <span className="hidden sm:inline">Open in new tab</span>
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
       </div>
 
       {/* Iframe Container */}
       <div className="flex-1 w-full h-full flex items-center justify-center bg-black relative">
-        <div className="w-full h-full relative">
+         {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center z-0">
+                <div className="w-10 h-10 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+         )}
+        <div className="w-full h-full relative z-10">
             <iframe
+                key={key}
                 src={embedUrl}
                 className="w-full h-full border-0 absolute inset-0"
                 allowFullScreen
+                // Important: Some hosts require standard referrers, so we removed referrerPolicy="no-referrer"
+                sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-popups"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                sandbox="allow-forms allow-header-enrichment allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation"
+                onLoad={() => setIsLoading(false)}
                 title={title}
             />
         </div>
